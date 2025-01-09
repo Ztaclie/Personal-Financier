@@ -3,8 +3,11 @@ import { Header } from "./components/Header";
 import { SearchBar } from "./components/SearchBar";
 import { SummaryCards } from "./components/SummaryCards";
 import { TransactionModal } from "./components/TransactionModal";
-import { TransactionList } from "./components/TransactionList";
 import { CategorySummary } from "./components/CategorySummary";
+import { ViewSelector } from "./components/ViewSelector";
+import { TableView } from "./components/views/TableView";
+import { SplitView } from "./components/views/SplitView";
+import { TimelineView } from "./components/views/TimelineView";
 
 function App() {
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
@@ -21,6 +24,8 @@ function App() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentView, setCurrentView] = useState("table");
+  const timeGrouping = "day";
 
   // Load transactions from localStorage
   useEffect(() => {
@@ -128,6 +133,44 @@ function App() {
     );
   };
 
+  const renderTransactionView = () => {
+    switch (currentView) {
+      case "table":
+        return (
+          <TableView
+            transactions={filteredTransactions}
+            isAdvancedMode={isAdvancedMode}
+            handleDelete={handleDelete}
+          />
+        );
+      case "split":
+        return (
+          <SplitView
+            transactions={filteredTransactions}
+            isAdvancedMode={isAdvancedMode}
+            handleDelete={handleDelete}
+          />
+        );
+      case "timeline":
+        return (
+          <TimelineView
+            transactions={filteredTransactions}
+            isAdvancedMode={isAdvancedMode}
+            handleDelete={handleDelete}
+            groupBy={timeGrouping}
+          />
+        );
+      default:
+        return (
+          <TableView
+            transactions={filteredTransactions}
+            isAdvancedMode={isAdvancedMode}
+            handleDelete={handleDelete}
+          />
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <Header
@@ -178,11 +221,9 @@ function App() {
           handleSubmit={handleSubmit}
         />
 
-        <TransactionList
-          transactions={filteredTransactions}
-          isAdvancedMode={isAdvancedMode}
-          handleDelete={handleDelete}
-        />
+        <ViewSelector currentView={currentView} onViewChange={setCurrentView} />
+
+        {renderTransactionView()}
       </main>
     </div>
   );
