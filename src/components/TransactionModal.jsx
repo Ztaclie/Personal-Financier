@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { CATEGORIES } from "../constants/categories";
+import { ArrowUpIcon, ArrowDownIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 export function TransactionModal({
   isOpen,
@@ -72,7 +73,7 @@ export function TransactionModal({
               }`}
             onClick={() => handleTypeChange("income")}
           >
-            <span className="text-2xl mb-1">↑</span>
+            <ArrowUpIcon className="w-6 h-6 mb-1" />
             <span>Income</span>
           </button>
           <button
@@ -84,7 +85,7 @@ export function TransactionModal({
               }`}
             onClick={() => handleTypeChange("expense")}
           >
-            <span className="text-2xl mb-1">↓</span>
+            <ArrowDownIcon className="w-6 h-6 mb-1" />
             <span>Expense</span>
           </button>
         </div>
@@ -127,13 +128,9 @@ export function TransactionModal({
             className="w-full p-2 text-gray-600 hover:text-gray-800 flex items-center justify-center gap-2"
           >
             {isExpanded ? "Less Details" : "More Details"}
-            <span
-              className={`transform transition-transform ${
-                isExpanded ? "rotate-180" : ""
-              }`}
-            >
-              ▼
-            </span>
+            <ChevronDownIcon 
+              className={`w-5 h-5 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {/* Expanded Section */}

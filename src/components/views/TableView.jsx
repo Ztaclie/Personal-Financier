@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { CATEGORIES } from "../../constants/categories";
+import { TrashIcon } from '@heroicons/react/24/outline';
 
 export function TableView({ transactions, isAdvancedMode, handleDelete }) {
   return (
@@ -40,9 +41,9 @@ export function TableView({ transactions, isAdvancedMode, handleDelete }) {
               <td className="p-3 text-right">
                 <button
                   onClick={() => handleDelete(transaction.id)}
-                  className="text-red-600 hover:text-red-800"
+                  className="text-red-600 hover:text-red-800 p-1 rounded-full hover:bg-red-50"
                 >
-                  Delete
+                  <TrashIcon className="w-5 h-5" />
                 </button>
               </td>
             </tr>
