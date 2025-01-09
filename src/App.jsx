@@ -8,6 +8,8 @@ import { ViewSelector } from "./components/ViewSelector";
 import { TableView } from "./components/views/TableView";
 import { SplitView } from "./components/views/SplitView";
 import { TimelineView } from "./components/views/TimelineView";
+import { CardView } from "./components/views/CardView";
+import { CATEGORIES } from "./constants/categories";
 
 function App() {
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
@@ -25,7 +27,7 @@ function App() {
   const [endDate, setEndDate] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentView, setCurrentView] = useState("table");
-  const timeGrouping = "day";
+  const [timeGrouping, setTimeGrouping] = useState("day");
 
   // Load transactions from localStorage
   useEffect(() => {
@@ -151,14 +153,85 @@ function App() {
             handleDelete={handleDelete}
           />
         );
-      case "timeline":
+      case "cards":
         return (
-          <TimelineView
+          <CardView
             transactions={filteredTransactions}
             isAdvancedMode={isAdvancedMode}
             handleDelete={handleDelete}
-            groupBy={timeGrouping}
           />
+        );
+      case "timeline":
+        return (
+          <>
+            <div className="mb-4">
+              <select
+                value={timeGrouping}
+                onChange={(e) => setTimeGrouping(e.target.value)}
+                className="p-2 border rounded-lg"
+              >
+                <option value="day">Group by Day</option>
+                <option value="week">Group by Week</option>
+                <option value="month">Group by Month</option>
+                <option value="year">Group by Year</option>
+              </select>
+            </div>
+            <TimelineView
+              transactions={filteredTransactions}
+              isAdvancedMode={isAdvancedMode}
+              handleDelete={handleDelete}
+              groupBy={timeGrouping}
+            />
+          </>
+        );
+      case "merged":
+        return (
+          <div className="bg-white p-6 rounded-lg shadow">
+            <div className="space-y-3">
+              {filteredTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex justify-between items-start p-3 border rounded hover:bg-gray-50"
+                >
+                  <div>
+                    <div className="font-semibold">
+                      {transaction.description}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {new Date(transaction.date).toLocaleDateString()}
+                      {isAdvancedMode && (
+                        <>
+                          {" • "}
+                          {
+                            [...CATEGORIES.INCOME, ...CATEGORIES.EXPENSE].find(
+                              (cat) => cat.id === transaction.category
+                            )?.label
+                          }
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`font-semibold ${
+                        transaction.amount >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      ${Math.abs(transaction.amount).toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => handleDelete(transaction.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         );
       default:
         return (
@@ -199,14 +272,9 @@ function App() {
           </div>
         )}
 
-        <div className="fixed bottom-8 right-8">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-          >
-            + Add Transaction
-          </button>
-        </div>
+        <ViewSelector currentView={currentView} onViewChange={setCurrentView} />
+
+        {renderTransactionView()}
 
         <TransactionModal
           isOpen={isModalOpen}
@@ -221,9 +289,14 @@ function App() {
           handleSubmit={handleSubmit}
         />
 
-        <ViewSelector currentView={currentView} onViewChange={setCurrentView} />
-
-        {renderTransactionView()}
+        <div className="fixed bottom-8 right-8">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            + Add Transaction
+          </button>
+        </div>
       </main>
     </div>
   );

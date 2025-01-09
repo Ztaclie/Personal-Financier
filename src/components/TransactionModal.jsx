@@ -1,7 +1,11 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { CATEGORIES } from "../constants/categories";
-import { ArrowUpIcon, ArrowDownIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronDownIcon,
+} from "@heroicons/react/24/outline";
 
 export function TransactionModal({
   isOpen,
@@ -16,7 +20,7 @@ export function TransactionModal({
   handleSubmit,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [transactionType, setTransactionType] = useState("income"); // 'income' or 'expense'
+  const [transactionType, setTransactionType] = useState("income");
 
   if (!isOpen) return null;
 
@@ -40,7 +44,6 @@ export function TransactionModal({
     if (!description || !amount) return;
 
     handleSubmit(transactionType)(e);
-    onClose();
     // Reset form state
     setIsExpanded(false);
     setTransactionType("income");
@@ -100,6 +103,7 @@ export function TransactionModal({
             className="w-full p-3 border rounded-lg"
             required
           />
+
           {/* Amount Input */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -116,6 +120,11 @@ export function TransactionModal({
                     : -Math.abs(e.target.value)
                 )
               }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && amount && description) {
+                  handleTransactionSubmit(e);
+                }
+              }}
               className="w-full pl-8 p-3 border rounded-lg"
               required
             />
@@ -128,8 +137,10 @@ export function TransactionModal({
             className="w-full p-2 text-gray-600 hover:text-gray-800 flex items-center justify-center gap-2"
           >
             {isExpanded ? "Less Details" : "More Details"}
-            <ChevronDownIcon 
-              className={`w-5 h-5 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            <ChevronDownIcon
+              className={`w-5 h-5 transform transition-transform ${
+                isExpanded ? "rotate-180" : ""
+              }`}
             />
           </button>
 
