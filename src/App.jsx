@@ -86,18 +86,25 @@ function App() {
     }, {});
   }, [filteredTransactions]);
 
-  const handleSubmit = (e) => {
+  // Split the handleSubmit into two functions for better UX
+  const handleSubmit = (type) => (e) => {
     e.preventDefault();
     if (!description || !amount) return;
+
+    // Ensure amount is positive for income and negative for expense
+    const finalAmount =
+      type === "income"
+        ? Math.abs(parseFloat(amount))
+        : -Math.abs(parseFloat(amount));
 
     const newTransaction = {
       id: Date.now(),
       description,
-      amount: parseFloat(amount),
+      amount: finalAmount,
       category:
         isAdvancedMode && category
           ? category
-          : amount >= 0
+          : type === "income"
           ? "other_income"
           : "other_expense",
       date: new Date().toISOString(),
@@ -198,28 +205,64 @@ function App() {
           {/* Add Transaction Form */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Add Transaction</h2>
-            <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="flex gap-4 mb-4">
+              <button
+                className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors
+                  ${
+                    amount >= 0
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                onClick={() => setAmount(Math.abs(amount || 0))}
+              >
+                Income
+              </button>
+              <button
+                className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors
+                  ${
+                    amount < 0
+                      ? "bg-red-600 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                onClick={() => setAmount(-Math.abs(amount || 0))}
+              >
+                Expense
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500">$</span>
+                </div>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  value={amount ? Math.abs(amount) : ""}
+                  onChange={(e) =>
+                    setAmount(amount >= 0 ? e.target.value : -e.target.value)
+                  }
+                  className="w-full pl-8 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
               <input
                 type="text"
                 placeholder="Description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-2 border rounded"
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
-              <input
-                type="number"
-                placeholder="Amount (use negative for expenses)"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full p-2 border rounded"
-                required
-              />
-              {isAdvancedMode && (
+            </div>
+
+            {isAdvancedMode && (
+              <div className="mb-4">
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full p-2 border rounded"
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select Category (Optional)</option>
                   <optgroup label="Income">
@@ -237,14 +280,22 @@ function App() {
                     ))}
                   </optgroup>
                 </select>
-              )}
+              </div>
+            )}
+
+            <div className="flex gap-4">
               <button
-                type="submit"
-                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+                onClick={handleSubmit(amount >= 0 ? "income" : "expense")}
+                className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-colors
+                  ${
+                    amount >= 0
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
               >
-                Add Transaction
+                Add {amount >= 0 ? "Income" : "Expense"}
               </button>
-            </form>
+            </div>
           </div>
 
           {/* Category Summary - Only in advanced mode */}
