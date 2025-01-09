@@ -2,6 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { CATEGORIES } from "./constants/categories";
 
 function App() {
+  const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
+    const saved = localStorage.getItem("isAdvancedMode");
+    return saved ? JSON.parse(saved) : false;
+  });
+
   const [transactions, setTransactions] = useState([]);
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
@@ -23,6 +28,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem("transactions", JSON.stringify(transactions));
   }, [transactions]);
+
+  // Save mode preference
+  useEffect(() => {
+    localStorage.setItem("isAdvancedMode", JSON.stringify(isAdvancedMode));
+  }, [isAdvancedMode]);
 
   // Filter transactions based on search, date, and category
   const filteredTransactions = useMemo(() => {
@@ -84,7 +94,12 @@ function App() {
       id: Date.now(),
       description,
       amount: parseFloat(amount),
-      category: category || (amount >= 0 ? "other_income" : "other_expense"),
+      category:
+        isAdvancedMode && category
+          ? category
+          : amount >= 0
+          ? "other_income"
+          : "other_expense",
       date: new Date().toISOString(),
     };
 
@@ -103,12 +118,20 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-blue-600 p-4">
-        <h1 className="text-white text-2xl font-bold">Finance Tracker</h1>
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-white text-2xl font-bold">Finance Tracker</h1>
+          <button
+            onClick={() => setIsAdvancedMode(!isAdvancedMode)}
+            className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-blue-50"
+          >
+            {isAdvancedMode ? "Switch to Basic" : "Switch to Advanced"}
+          </button>
+        </div>
       </nav>
 
       <main className="container mx-auto p-4">
+        {/* Summary Cards - Show in both modes */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {/* Summary Cards */}
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Total Balance</h2>
             <div
@@ -119,14 +142,12 @@ function App() {
               ${summary.total.toFixed(2)}
             </div>
           </div>
-
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Total Income</h2>
             <div className="text-3xl font-bold text-green-600">
               ${summary.income.toFixed(2)}
             </div>
           </div>
-
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Total Expenses</h2>
             <div className="text-3xl font-bold text-red-600">
@@ -135,7 +156,7 @@ function App() {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filters - Show in both modes */}
         <div className="bg-white p-6 rounded-lg shadow mb-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input
@@ -145,7 +166,6 @@ function App() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="p-2 border rounded"
             />
-
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
@@ -155,7 +175,6 @@ function App() {
               <option value="month">This Month</option>
               <option value="custom">Custom Range</option>
             </select>
-
             {dateFilter === "custom" && (
               <div className="flex gap-2">
                 <input
@@ -196,27 +215,29 @@ function App() {
                 className="w-full p-2 border rounded"
                 required
               />
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full p-2 border rounded"
-              >
-                <option value="">Select Category (Optional)</option>
-                <optgroup label="Income">
-                  {CATEGORIES.INCOME.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Expenses">
-                  {CATEGORIES.EXPENSE.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
+              {isAdvancedMode && (
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full p-2 border rounded"
+                >
+                  <option value="">Select Category (Optional)</option>
+                  <optgroup label="Income">
+                    {CATEGORIES.INCOME.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Expenses">
+                    {CATEGORIES.EXPENSE.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              )}
               <button
                 type="submit"
                 className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
@@ -226,27 +247,29 @@ function App() {
             </form>
           </div>
 
-          {/* Category Summary */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Category Summary</h2>
-            <div className="space-y-2">
-              {Object.entries(categoryTotals).map(([category, total]) => {
-                const categoryInfo = [
-                  ...CATEGORIES.INCOME,
-                  ...CATEGORIES.EXPENSE,
-                ].find((cat) => cat.id === category);
-                return (
-                  <div
-                    key={category}
-                    className="flex justify-between items-center"
-                  >
-                    <span>{categoryInfo?.label || category}</span>
-                    <span className="font-semibold">${total.toFixed(2)}</span>
-                  </div>
-                );
-              })}
+          {/* Category Summary - Only in advanced mode */}
+          {isAdvancedMode && (
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="text-xl font-semibold mb-4">Category Summary</h2>
+              <div className="space-y-2">
+                {Object.entries(categoryTotals).map(([category, total]) => {
+                  const categoryInfo = [
+                    ...CATEGORIES.INCOME,
+                    ...CATEGORIES.EXPENSE,
+                  ].find((cat) => cat.id === category);
+                  return (
+                    <div
+                      key={category}
+                      className="flex justify-between items-center"
+                    >
+                      <span>{categoryInfo?.label || category}</span>
+                      <span className="font-semibold">${total.toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Transactions List */}
@@ -256,45 +279,48 @@ function App() {
             <div className="text-gray-600">No transactions found</div>
           ) : (
             <div className="space-y-2">
-              {filteredTransactions.map((transaction) => {
-                const categoryInfo = [
-                  ...CATEGORIES.INCOME,
-                  ...CATEGORIES.EXPENSE,
-                ].find((cat) => cat.id === transaction.category);
-                return (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-3 border rounded hover:bg-gray-50"
-                  >
-                    <div>
-                      <div className="font-semibold">
-                        {transaction.description}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {new Date(transaction.date).toLocaleDateString()} •{" "}
-                        {categoryInfo?.label}
-                      </div>
+              {filteredTransactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="flex items-center justify-between p-3 border rounded hover:bg-gray-50"
+                >
+                  <div>
+                    <div className="font-semibold">
+                      {transaction.description}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span
-                        className={`font-semibold ${
-                          transaction.amount >= 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        ${transaction.amount.toFixed(2)}
-                      </span>
-                      <button
-                        onClick={() => handleDelete(transaction.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        ×
-                      </button>
+                    <div className="text-sm text-gray-500">
+                      {new Date(transaction.date).toLocaleDateString()}
+                      {isAdvancedMode && (
+                        <>
+                          {" • "}
+                          {
+                            [...CATEGORIES.INCOME, ...CATEGORIES.EXPENSE].find(
+                              (cat) => cat.id === transaction.category
+                            )?.label
+                          }
+                        </>
+                      )}
                     </div>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-4">
+                    <span
+                      className={`font-semibold ${
+                        transaction.amount >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      ${transaction.amount.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => handleDelete(transaction.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
