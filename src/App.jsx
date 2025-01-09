@@ -78,13 +78,13 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!description || !amount || !category) return;
+    if (!description || !amount) return;
 
     const newTransaction = {
       id: Date.now(),
       description,
       amount: parseFloat(amount),
-      category,
+      category: category || (amount >= 0 ? "other_income" : "other_expense"),
       date: new Date().toISOString(),
     };
 
@@ -200,9 +200,8 @@ function App() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full p-2 border rounded"
-                required
               >
-                <option value="">Select Category</option>
+                <option value="">Select Category (Optional)</option>
                 <optgroup label="Income">
                   {CATEGORIES.INCOME.map((cat) => (
                     <option key={cat.id} value={cat.id}>
