@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { CATEGORIES } from "./constants/categories";
+import { Header } from "./components/Header";
+import { SearchBar } from "./components/SearchBar";
+import { SummaryCards } from "./components/SummaryCards";
+import { TransactionModal } from "./components/TransactionModal";
+import { TransactionList } from "./components/TransactionList";
+import { CategorySummary } from "./components/CategorySummary";
 
 function App() {
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
@@ -15,6 +20,7 @@ function App() {
   const [dateFilter, setDateFilter] = useState("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Load transactions from localStorage
   useEffect(() => {
@@ -76,7 +82,7 @@ function App() {
     );
   }, [filteredTransactions]);
 
-  // Calculate category totals for charts
+  // Calculate category totals for the CategorySummary
   const categoryTotals = useMemo(() => {
     return filteredTransactions.reduce((acc, transaction) => {
       const category = transaction.category;
@@ -124,257 +130,59 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <nav className="bg-blue-600 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-white text-2xl font-bold">Finance Tracker</h1>
-          <button
-            onClick={() => setIsAdvancedMode(!isAdvancedMode)}
-            className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-blue-50"
-          >
-            {isAdvancedMode ? "Switch to Basic" : "Switch to Advanced"}
-          </button>
-        </div>
-      </nav>
+      <Header
+        isAdvancedMode={isAdvancedMode}
+        setIsAdvancedMode={setIsAdvancedMode}
+      />
 
       <main className="container mx-auto p-4">
-        {/* Summary Cards - Show in both modes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Total Balance</h2>
-            <div
-              className={`text-3xl font-bold ${
-                summary.total >= 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              ${summary.total.toFixed(2)}
-            </div>
+        <SearchBar
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          dateFilter={dateFilter}
+          setDateFilter={setDateFilter}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          endDate={endDate}
+          setEndDate={setEndDate}
+        />
+
+        <SummaryCards summary={summary} />
+
+        {/* Add CategorySummary for advanced mode */}
+        {isAdvancedMode && (
+          <div className="mb-4">
+            <CategorySummary categoryTotals={categoryTotals} />
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Total Income</h2>
-            <div className="text-3xl font-bold text-green-600">
-              ${summary.income.toFixed(2)}
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Total Expenses</h2>
-            <div className="text-3xl font-bold text-red-600">
-              ${summary.expenses.toFixed(2)}
-            </div>
-          </div>
+        )}
+
+        <div className="fixed bottom-8 right-8">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            + Add Transaction
+          </button>
         </div>
 
-        {/* Filters - Show in both modes */}
-        <div className="bg-white p-6 rounded-lg shadow mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input
-              type="text"
-              placeholder="Search transactions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="p-2 border rounded"
-            />
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="p-2 border rounded"
-            >
-              <option value="all">All Time</option>
-              <option value="month">This Month</option>
-              <option value="custom">Custom Range</option>
-            </select>
-            {dateFilter === "custom" && (
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="p-2 border rounded"
-                />
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="p-2 border rounded"
-                />
-              </div>
-            )}
-          </div>
-        </div>
+        <TransactionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          isAdvancedMode={isAdvancedMode}
+          amount={amount}
+          setAmount={setAmount}
+          description={description}
+          setDescription={setDescription}
+          category={category}
+          setCategory={setCategory}
+          handleSubmit={handleSubmit}
+        />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Add Transaction Form */}
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Add Transaction</h2>
-            <div className="flex gap-4 mb-4">
-              <button
-                className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors
-                  ${
-                    amount >= 0
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                onClick={() => setAmount(Math.abs(amount || 0))}
-              >
-                Income
-              </button>
-              <button
-                className={`flex-1 py-2 px-4 rounded-lg font-semibold transition-colors
-                  ${
-                    amount < 0
-                      ? "bg-red-600 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                onClick={() => setAmount(-Math.abs(amount || 0))}
-              >
-                Expense
-              </button>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500">$</span>
-                </div>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={amount ? Math.abs(amount) : ""}
-                  onChange={(e) =>
-                    setAmount(amount >= 0 ? e.target.value : -e.target.value)
-                  }
-                  className="w-full pl-8 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              <input
-                type="text"
-                placeholder="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                required
-              />
-            </div>
-
-            {isAdvancedMode && (
-              <div className="mb-4">
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select Category (Optional)</option>
-                  <optgroup label="Income">
-                    {CATEGORIES.INCOME.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Expenses">
-                    {CATEGORIES.EXPENSE.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
-              </div>
-            )}
-
-            <div className="flex gap-4">
-              <button
-                onClick={handleSubmit(amount >= 0 ? "income" : "expense")}
-                className={`flex-1 py-3 px-4 rounded-lg font-semibold text-white transition-colors
-                  ${
-                    amount >= 0
-                      ? "bg-green-600 hover:bg-green-700"
-                      : "bg-red-600 hover:bg-red-700"
-                  }`}
-              >
-                Add {amount >= 0 ? "Income" : "Expense"}
-              </button>
-            </div>
-          </div>
-
-          {/* Category Summary - Only in advanced mode */}
-          {isAdvancedMode && (
-            <div className="bg-white p-6 rounded-lg shadow">
-              <h2 className="text-xl font-semibold mb-4">Category Summary</h2>
-              <div className="space-y-2">
-                {Object.entries(categoryTotals).map(([category, total]) => {
-                  const categoryInfo = [
-                    ...CATEGORIES.INCOME,
-                    ...CATEGORIES.EXPENSE,
-                  ].find((cat) => cat.id === category);
-                  return (
-                    <div
-                      key={category}
-                      className="flex justify-between items-center"
-                    >
-                      <span>{categoryInfo?.label || category}</span>
-                      <span className="font-semibold">${total.toFixed(2)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Transactions List */}
-        <div className="bg-white p-6 rounded-lg shadow mt-4">
-          <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
-          {filteredTransactions.length === 0 ? (
-            <div className="text-gray-600">No transactions found</div>
-          ) : (
-            <div className="space-y-2">
-              {filteredTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-3 border rounded hover:bg-gray-50"
-                >
-                  <div>
-                    <div className="font-semibold">
-                      {transaction.description}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {new Date(transaction.date).toLocaleDateString()}
-                      {isAdvancedMode && (
-                        <>
-                          {" • "}
-                          {
-                            [...CATEGORIES.INCOME, ...CATEGORIES.EXPENSE].find(
-                              (cat) => cat.id === transaction.category
-                            )?.label
-                          }
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span
-                      className={`font-semibold ${
-                        transaction.amount >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      ${transaction.amount.toFixed(2)}
-                    </span>
-                    <button
-                      onClick={() => handleDelete(transaction.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <TransactionList
+          transactions={filteredTransactions}
+          isAdvancedMode={isAdvancedMode}
+          handleDelete={handleDelete}
+        />
       </main>
     </div>
   );
