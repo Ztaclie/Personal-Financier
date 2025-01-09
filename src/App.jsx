@@ -1,15 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { Header } from "./components/Header";
-import { SearchBar } from "./components/SearchBar";
 import { SummaryCards } from "./components/SummaryCards";
 import { TransactionModal } from "./components/TransactionModal";
 import { CategorySummary } from "./components/CategorySummary";
-import { ViewSelector } from "./components/ViewSelector";
 import { TableView } from "./components/views/TableView";
 import { SplitView } from "./components/views/SplitView";
 import { TimelineView } from "./components/views/TimelineView";
 import { CardView } from "./components/views/CardView";
 import { CATEGORIES } from "./constants/categories";
+import { ExportMenu } from "./components/ExportMenu";
+import { BackupMenu } from "./components/BackupMenu";
+import { Sidebar } from "./components/Sidebar";
+import { PlusIcon } from "@heroicons/react/24/outline";
 
 function App() {
   const [isAdvancedMode, setIsAdvancedMode] = useState(() => {
@@ -21,13 +23,11 @@ function App() {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentView, setCurrentView] = useState("table");
   const [timeGrouping, setTimeGrouping] = useState("day");
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showBackupMenu, setShowBackupMenu] = useState(false);
 
   // Load transactions from localStorage
   useEffect(() => {
@@ -49,28 +49,8 @@ function App() {
 
   // Filter transactions based on search, date, and category
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((transaction) => {
-      const matchesSearch = transaction.description
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      let matchesDate = true;
-
-      if (dateFilter === "custom" && startDate && endDate) {
-        const transactionDate = new Date(transaction.date);
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        matchesDate = transactionDate >= start && transactionDate <= end;
-      } else if (dateFilter === "month") {
-        const today = new Date();
-        const transactionDate = new Date(transaction.date);
-        matchesDate =
-          transactionDate.getMonth() === today.getMonth() &&
-          transactionDate.getFullYear() === today.getFullYear();
-      }
-
-      return matchesSearch && matchesDate;
-    });
-  }, [transactions, searchTerm, dateFilter, startDate, endDate]);
+    return transactions;
+  }, [transactions]);
 
   // Calculate summaries
   const summary = useMemo(() => {
@@ -133,6 +113,12 @@ function App() {
     setTransactions(
       transactions.filter((transaction) => transaction.id !== id)
     );
+  };
+
+  const handleRestore = (restoredTransactions) => {
+    setTransactions(restoredTransactions);
+    // Optionally save to localStorage
+    localStorage.setItem("transactions", JSON.stringify(restoredTransactions));
   };
 
   const renderTransactionView = () => {
@@ -245,59 +231,80 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Header
-        isAdvancedMode={isAdvancedMode}
-        setIsAdvancedMode={setIsAdvancedMode}
+    <div className="min-h-screen bg-gray-100 flex">
+      <Sidebar
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        transactions={transactions}
+        onRestore={handleRestore}
+        timeGrouping={timeGrouping}
+        setTimeGrouping={setTimeGrouping}
       />
 
-      <main className="container mx-auto p-4">
-        <SearchBar
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          dateFilter={dateFilter}
-          setDateFilter={setDateFilter}
-          startDate={startDate}
-          setStartDate={setStartDate}
-          endDate={endDate}
-          setEndDate={setEndDate}
-        />
-
-        <SummaryCards summary={summary} />
-
-        {/* Add CategorySummary for advanced mode */}
-        {isAdvancedMode && (
-          <div className="mb-4">
-            <CategorySummary categoryTotals={categoryTotals} />
-          </div>
-        )}
-
-        <ViewSelector currentView={currentView} onViewChange={setCurrentView} />
-
-        {renderTransactionView()}
-
-        <TransactionModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+      <div className="flex-1 ml-16">
+        <Header
           isAdvancedMode={isAdvancedMode}
-          amount={amount}
-          setAmount={setAmount}
-          description={description}
-          setDescription={setDescription}
-          category={category}
-          setCategory={setCategory}
-          handleSubmit={handleSubmit}
+          setIsAdvancedMode={setIsAdvancedMode}
         />
 
-        <div className="fixed bottom-8 right-8">
+        <main className="container mx-auto p-4">
+          <SummaryCards summary={summary} />
+
+          {isAdvancedMode && (
+            <div className="mb-4">
+              <CategorySummary categoryTotals={categoryTotals} />
+            </div>
+          )}
+
+          {renderTransactionView()}
+
+          {/* Add Transaction Button */}
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+            className="fixed bottom-8 right-8 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
           >
-            + Add Transaction
+            <PlusIcon className="w-6 h-6" />
           </button>
-        </div>
-      </main>
+
+          {/* Export Modal */}
+          {showExportMenu && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <ExportMenu
+                  transactions={filteredTransactions}
+                  onClose={() => setShowExportMenu(false)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Backup Modal */}
+          {showBackupMenu && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-lg p-6">
+                <BackupMenu
+                  transactions={transactions}
+                  onRestore={handleRestore}
+                  onClose={() => setShowBackupMenu(false)}
+                />
+              </div>
+            </div>
+          )}
+
+          <TransactionModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            isAdvancedMode={isAdvancedMode}
+            amount={amount}
+            setAmount={setAmount}
+            description={description}
+            setDescription={setDescription}
+            category={category}
+            setCategory={setCategory}
+            handleSubmit={handleSubmit}
+          />
+        </main>
+      </div>
     </div>
   );
 }
