@@ -13,7 +13,9 @@ import {
   ViewColumnsIcon,
   ListBulletIcon,
   ChevronDownIcon,
+  ArrowUpTrayIcon,
 } from "@heroicons/react/24/outline";
+import { importFromCSV, importFromJSON } from "../utils/importUtils";
 
 export const Sidebar = ({
   currentView,
@@ -25,6 +27,7 @@ export const Sidebar = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showExportOptions, setShowExportOptions] = useState(false);
+  const [showImportOptions, setShowImportOptions] = useState(false);
   const [showBackupOptions, setShowBackupOptions] = useState(false);
 
   const views = [
@@ -126,6 +129,29 @@ export const Sidebar = ({
     window.print();
   };
 
+  const handleImport = async (file, importFunction) => {
+    try {
+      const importedTransactions = await importFunction(file);
+      onRestore([...transactions, ...importedTransactions]);
+      alert("Import successful!");
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const importFile = (acceptType, importFunction) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = acceptType;
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleImport(file, importFunction);
+      }
+    };
+    input.click();
+  };
+
   return (
     <div
       className={`fixed left-0 top-0 h-screen bg-white shadow-lg transition-all duration-300 flex flex-col
@@ -134,6 +160,7 @@ export const Sidebar = ({
       onMouseLeave={() => {
         setIsHovered(false);
         setShowExportOptions(false);
+        setShowImportOptions(false);
         setShowBackupOptions(false);
       }}
     >
@@ -172,8 +199,49 @@ export const Sidebar = ({
         </div>
       </div>
 
-      {/* Export & Backup Options */}
+      {/* Import/Export Options */}
       <div className="border-t space-y-2">
+        {/* Import Options */}
+        <div className="relative">
+          <button
+            onClick={() => setShowImportOptions(!showImportOptions)}
+            className="w-full flex items-center px-4 py-3 text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            <div className="w-6 h-6 shrink-0 flex items-center justify-center">
+              <ArrowUpTrayIcon className="w-6 h-6" />
+            </div>
+            {isHovered && (
+              <>
+                <span className="ml-3 flex-1">Import</span>
+                <ChevronDownIcon
+                  className={`w-4 h-4 transition-transform ${
+                    showImportOptions ? "rotate-180" : ""
+                  }`}
+                />
+              </>
+            )}
+          </button>
+
+          {isHovered && showImportOptions && (
+            <div className="absolute bottom-full left-0 w-full bg-white shadow-lg rounded-lg py-2 mb-1">
+              <button
+                onClick={() => importFile(".csv", importFromCSV)}
+                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
+              >
+                <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
+                Import CSV
+              </button>
+              <button
+                onClick={() => importFile(".json", importFromJSON)}
+                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
+              >
+                <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
+                Import JSON
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Export Options */}
         <div className="relative">
           <button
