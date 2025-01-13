@@ -58,6 +58,24 @@ export const Sidebar = ({
     link.click();
   };
 
+  const exportToJSON = () => {
+    const data = {
+      transactions,
+      exportDate: new Date().toISOString(),
+      version: "1.0",
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `transactions_${
+      new Date().toISOString().split("T")[0]
+    }.json`;
+    link.click();
+  };
+
   const backupData = () => {
     const data = {
       transactions,
@@ -185,6 +203,13 @@ export const Sidebar = ({
               >
                 <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
                 CSV
+              </button>
+              <button
+                onClick={exportToJSON}
+                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
+              >
+                <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
+                JSON
               </button>
               <button
                 onClick={shareViaEmail}
